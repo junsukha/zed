@@ -44,8 +44,8 @@ def main():
     # d  = d / float(max - min)
     # print(np.max(d))
 
-    cv2.imshow('depth', d)
-    cv2.waitKey(0)
+    # cv2.imshow('depth', d)
+    # cv2.waitKey(0)
     print(f'l.shape: {l.shape}')
     print(f'd.shape: {d.shape}')
 
@@ -136,7 +136,10 @@ def main():
 
 
 
-    d = d.reshape(-1, 1) * -1
+    d = d.reshape(-1, 1)
+    # inverse depth
+    # d *= -1
+
     # multiply depth
     # uv3[:, [2]] = uv3[:, [2]] * d
     # uv3[:, [2]] = uv3[:, [2]]
@@ -212,6 +215,7 @@ def main():
     l = l.reshape(-1, 3) # (327680, 3)
     pcd.colors = o3d.utility.Vector3dVector(l.astype(np.float64) / 255.0)
 
+    pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
 
 
     o3d.visualization.draw_geometries([pcd])
