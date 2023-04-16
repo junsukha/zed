@@ -14,11 +14,11 @@ def main():
     '''
     Cropped images
     '''
-    # path_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\cropped-Rectified\scan114_train' \
-    #          r'\rect_001_3_r5000.png'
+    path_l_crop = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\cropped-Rectified\scan114_train' \
+             r'\rect_001_3_r5000.png'
     # path_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\cropped-Rectified\scan114_train' \
     #          r'/rect_002_3_r5000.png'
-    # depth_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\cropped-Depths\scan114\depth_map_0000.pfm'
+    depth_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\cropped-Depths\scan114\depth_map_0000.pfm'
 
     '''
     original images
@@ -27,13 +27,14 @@ def main():
              r'\rect_001_3_r5000.png'
     path_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Rectified\scan114_train' \
              r'/rect_002_3_r5000.png'
-    depth_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Depths\scan114\depth_map_0000.pfm'
+    # depth_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Depths\scan114\depth_map_0000.pfm'
 
 
     cam_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Cameras\train_temp\00000000_cam.txt'
     cam_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Cameras\train_temp\00000001_cam.txt'
 
     l = cv2.imread(path_l)
+    l_crop = cv2.imread(path_l_crop)
     r = cv2.imread(path_r)
     d = cv2.imread(depth_l)
     d, _ = read_pfm(depth_l)
@@ -101,12 +102,16 @@ def main():
     ixt_l_crop = np.copy(ixt_l)
     ixt_l_crop[0,0] = ixt_l[0,0] / factor_x
     ixt_l_crop[1,1] = ixt_l[1,1] / factor_y
-    # ixt_r[0, 0] = ixt_r[0, 0] / factor_x
-    # ixt_r[1, 1] = ixt_r[1, 1] / factor_y
+
+    ixt_l[0, 0] = ixt_l[0, 0] / factor_x
+    ixt_l[1, 1] = ixt_l[1, 1] / factor_y
+
+    ixt_r[0, 0] = ixt_r[0, 0] / factor_x
+    ixt_r[1, 1] = ixt_r[1, 1] / factor_y
 
 
     print(f'ixt_l_crop: {ixt_l_crop}')
-    h = 512 # l.shape[0]
+    h = 512 # l.shape[0] # the size i cropped to. the size i want the output image to be
     w = 640 # l.shape[1]
 
     h_crop = 512
@@ -238,8 +243,9 @@ def main():
     pcd_l_crop.points = o3d.utility.Vector3dVector(c2w_l_crop)
     pcd_r.points = o3d.utility.Vector3dVector(c2w_r)
     l = l.reshape(-1, 3) # (327680, 3)
+    l_crop = l_crop.reshape(-1,3)
     r = r.reshape(-1, 3)
-    pcd_l.colors = o3d.utility.Vector3dVector(l.astype(np.float64) / 255.0)
+    pcd_l.colors = o3d.utility.Vector3dVector(l_crop.astype(np.float64) / 255.0)
     pcd_l_crop.colors = o3d.utility.Vector3dVector(l.astype(np.float64) / 255.0)
     pcd_r.colors = o3d.utility.Vector3dVector(r.astype(np.float64) / 255.0)
     pcd_l.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
@@ -248,7 +254,7 @@ def main():
 
 
     # o3d.visualization.draw_geometries([pcd_r])
-    o3d.visualization.draw_geometries([pcd_l, pcd_l_crop])
+    o3d.visualization.draw_geometries([pcd_l])
     # o3d.visualization.draw_geometries([pcd_l, pcd_r])
 if __name__ == "__main__":
     main()
