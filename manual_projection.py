@@ -136,11 +136,11 @@ def main():
 
 
 
-    d = d.reshape(-1, 1)
+    d = d.reshape(-1, 1) * -1
     # multiply depth
     # uv3[:, [2]] = uv3[:, [2]] * d
     # uv3[:, [2]] = uv3[:, [2]]
-    # uv3 = uv3 * d
+    uv3 = uv3 * d
 
     print(f'uv3 last: {uv3[-5:]}')
     # pixel space to image to camera space
@@ -154,7 +154,7 @@ def main():
 
     print(np.max(d), np.min(d))
     print( i2c[:, 2].shape)
-    i2c = i2c * d # multiply depth. is this correct way?
+    # i2c = i2c * d # multiply depth. is this correct way?
     # print(i2c[0])
     # print(f'inverse: {np.linalg.inv(ixt_l)}')
 
@@ -175,15 +175,34 @@ def main():
     # homogenous to normal coordinate
     c2w = c2w[:, :3] #.reshape(h,w,3).astype(float)
 
+    '''
+    option 1
+    '''
+    # print(c2w.shape)
+    # c2w = c2w.reshape(h,w,-1)
+    # # c2w = np.flip(c2w, 1)
+    # c2w = np.flipud(c2w)
+    # # c2w = np.flip(c2w, 2)
+    # # c2w = np.fliplr(c2w)
+    # c2w = c2w.reshape(-1, 3)
+    #
+    # # reverse the depth
+    # c2w[:, 2] = c2w[:, 2] * -1
+
+    '''
+    option 2
+    '''
     print(c2w.shape)
-    c2w = c2w.reshape(h,w,-1)
+    c2w = c2w.reshape(h, w, -1)
     # c2w = np.flip(c2w, 1)
-    c2w = np.flipud(c2w)
+    # c2w = np.flipud(c2w)
     # c2w = np.flip(c2w, 2)
     # c2w = np.fliplr(c2w)
     c2w = c2w.reshape(-1, 3)
 
-    c2w[:, 2] = c2w[:, 2] * -1
+    # reverse the depth
+    # c2w[:, 2] = c2w[:, 2] * -1
+
 
     # make point cloud
     pcd = o3d.geometry.PointCloud()
