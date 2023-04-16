@@ -147,77 +147,77 @@ def main():
 
     print(f'uv3 last: {uv3[-5:]}')
     # pixel space to image to camera space
-    i2c = np.sum(uv3[..., None, :] * np.linalg.inv(ixt_l)[None, ...], axis=-1)
-    # i2c = np.sum(uv3[..., None, :] * (ixt_l.T)[None, ...], axis=-1)
-
+    i2c_l = np.sum(uv3[..., None, :] * np.linalg.inv(ixt_l)[None, ...], axis=-1)
+    # i2c_l = np.sum(uv3[..., None, :] * (ixt_l.T)[None, ...], axis=-1)
+    i2c_r = np.sum(uv3[..., None, :] * np.linalg.inv(ixt_r)[None, ...], axis=-1)
     # d = d.reshape(-1, 1)
 
 
-    print(f'i2c last: {i2c[-5:]}')
+    print(f'i2c_l last: {i2c_l[-5:]}')
 
     print(np.max(d), np.min(d))
-    print( i2c[:, 2].shape)
-    # i2c = i2c * d # multiply depth. is this correct way?
-    # print(i2c[0])
+    print( i2c_l[:, 2].shape)
+    # i2c_l = i2c_l * d # multiply depth. is this correct way?
+    # print(i2c_l[0])
     # print(f'inverse: {np.linalg.inv(ixt_l)}')
 
     # make homogeneous coordinate
-    i2c = np.hstack((i2c, np.ones((i2c.shape[0], 1)))) # (h*w, 4)
+    i2c_l = np.hstack((i2c_l, np.ones((i2c_l.shape[0], 1)))) # (h*w, 4)
+    i2c_r = np.hstack((i2c_r, np.ones((i2c_r.shape[0], 1))))  # (h*w, 4)
 
-    print(i2c.shape)
-    print(i2c[:15])
+    print(i2c_l.shape)
+    print(i2c_l[:15])
     print(f'ext_l.shape: {ext_l.shape}')
 
-    print(np.max(i2c[:, [0]]))
+    print(np.max(i2c_l[:, [0]]))
 
-    # c2w = np.sum(i2c[..., None, :] * np.linalg.inv(ext_l)[None, ...], axis=-1)
-    c2w = np.sum(i2c[..., None, :] * (ext_l.T)[None, ...], axis=-1)
-
-    print(c2w[:5])
+    # c2w_l = np.sum(i2c_l[..., None, :] * np.linalg.inv(ext_l)[None, ...], axis=-1)
+    c2w_l = np.sum(i2c_l[..., None, :] * (ext_l.T)[None, ...], axis=-1)
+    c2w_r = np.sum(i2c_r[..., None, :] * (ext_r.T)[None, ...], axis=-1)
+    print(c2w_l[:5])
 
     # homogenous to normal coordinate
-    c2w = c2w[:, :3] #.reshape(h,w,3).astype(float)
-
+    c2w_l = c2w_l[:, :3] #.reshape(h,w,3).astype(float)
+    c2w_r = c2w_r[:, :3]
     '''
     option 1
     '''
-    # print(c2w.shape)
-    # c2w = c2w.reshape(h,w,-1)
-    # # c2w = np.flip(c2w, 1)
-    # c2w = np.flipud(c2w)
-    # # c2w = np.flip(c2w, 2)
-    # # c2w = np.fliplr(c2w)
-    # c2w = c2w.reshape(-1, 3)
+    # print(c2w_l.shape)
+    # c2w_l = c2w_l.reshape(h,w,-1)
+    # # c2w_l = np.flip(c2w_l, 1)
+    # c2w_l = np.flipud(c2w_l)
+    # # c2w_l = np.flip(c2w_l, 2)
+    # # c2w_l = np.fliplr(c2w_l)
+    # c2w_l = c2w_l.reshape(-1, 3)
     #
     # # reverse the depth
-    # c2w[:, 2] = c2w[:, 2] * -1
+    # c2w_l[:, 2] = c2w_l[:, 2] * -1
 
     '''
     option 2
     '''
-    print(c2w.shape)
-    c2w = c2w.reshape(h, w, -1)
-    # c2w = np.flip(c2w, 1)
-    # c2w = np.flipud(c2w)
-    # c2w = np.flip(c2w, 2)
-    # c2w = np.fliplr(c2w)
-    c2w = c2w.reshape(-1, 3)
+    print(c2w_l.shape)
+    # c2w_l = c2w_l.reshape(h, w, -1)
+    # c2w_l = c2w_l.reshape(-1, 3)
 
     # reverse the depth
-    # c2w[:, 2] = c2w[:, 2] * -1
+    # c2w_l[:, 2] = c2w_l[:, 2] * -1
 
 
     # make point cloud
-    pcd = o3d.geometry.PointCloud()
-    print(type(c2w))
-    pcd.points = o3d.utility.Vector3dVector(c2w)
-
+    pcd_l = o3d.geometry.PointCloud()
+    pcd_r = o3d.geometry.PointCloud()
+    print(type(c2w_l))
+    pcd_l.points = o3d.utility.Vector3dVector(c2w_l)
+    pcd_r.points = o3d.utility.Vector3dVector(c2w_r)
     l = l.reshape(-1, 3) # (327680, 3)
-    pcd.colors = o3d.utility.Vector3dVector(l.astype(np.float64) / 255.0)
+    r = r.reshape(-1, 3)
+    pcd_l.colors = o3d.utility.Vector3dVector(l.astype(np.float64) / 255.0)
+    pcd_r.colors = o3d.utility.Vector3dVector(r.astype(np.float64) / 255.0)
+    pcd_l.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
+    pcd_r.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
 
-    pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]])
-
-
-    o3d.visualization.draw_geometries([pcd])
+    o3d.visualization.draw_geometries([pcd_r])
+    o3d.visualization.draw_geometries([pcd_l, pcd_r])
 if __name__ == "__main__":
     main()
