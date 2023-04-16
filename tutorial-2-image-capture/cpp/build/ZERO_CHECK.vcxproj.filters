@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials\tutorial-2-image-capture\cpp\build\CMakeFiles\dea7cc20ecf94cad47a59030144a5d78\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{F98190CE-55DA-35AE-9D7E-6DA12B22D2C6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
