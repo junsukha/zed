@@ -79,7 +79,7 @@ def main():
 
     scene_info = {'ixts': [], 'exts': [], 'dpt_paths': [], 'img_paths': []}
 
-    while i < 50:
+    while i < 10:
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             # Get the pose of the left eye of the camera with reference to the world frame
             zed.get_position(zed_pose,
@@ -97,31 +97,35 @@ def main():
             zed.retrieve_measure(depth_l, sl.MEASURE.DEPTH)
 
             # save image in current directory
-            cv2.imwrite('images/rect_{:03d}_3_r5000.png'.format(i+1), image_zed_l)
-            cv2.imwrite('images/rect_{:03d}_3_r5000.png'.format(i+2), image_zed_r)
+            cv2.imwrite('images2/rect_{:03d}_3_r5000.png'.format(i+1), image_zed_l)
+            cv2.imwrite('images2/rect_{:03d}_3_r5000.png'.format(i+2), image_zed_r)
 
             # print(f'depth_ls.shape: {depth_l.get_data().shape}')
-            cv2.imwrite('images/depth_map_{:04d}.pfm'.format(i), depth_l.get_data())
-            cv2.imwrite('images/depth_map_{:04d}.pfm'.format(i+1), depth_l.get_data())
+            cv2.imwrite('images2/depth_map_{:04d}.pfm'.format(i), depth_l.get_data())
+            cv2.imwrite('images2/depth_map_{:04d}.pfm'.format(i+1), depth_l.get_data())
 
             # Display the translation and timestamp
-            py_translation = sl.Translation()
-            tx = round(zed_pose.get_translation(py_translation).get()[0],
-                       3)  # translation from the pose  # zed_pose 가 가지고 있는 translation 정보를 py_translation에 저장? # py_translation 없어도됨;
-            ty = round(zed_pose.get_translation(py_translation).get()[1], 3)
-            tz = round(zed_pose.get_translation(py_translation).get()[2], 3)
+            # py_translation = sl.Translation()
+            # tx = round(zed_pose.get_translation(py_translation).get()[0],
+            #            3)  # translation from the pose  # zed_pose 가 가지고 있는 translation 정보를 py_translation에 저장? # py_translation 없어도됨;
+            # ty = round(zed_pose.get_translation(py_translation).get()[1], 3)
+            # tz = round(zed_pose.get_translation(py_translation).get()[2], 3)
             # print("Translation: Tx: {0}, Ty: {1}, Tz {2}, Timestamp: {3}\n".format(tx, ty, tz, zed_pose.timestamp.get_milliseconds()))
+            print(f'py_translation: {zed_pose.get_translation().get()}')
 
             py_rotation = sl.Rotation()
-            r00 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 0], 3)
-            r01 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 1], 3)
-            r02 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 2], 3)
-            r10 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 0], 3)
-            r11 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 1], 3)
-            r12 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 2], 3)
-            r20 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 0], 3)
-            r21 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 1], 3)
-            r22 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 2], 3)
+            # zed_pose.get_rotation_matrix(py_rotation)
+            # r00 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 0], 3)
+            # r01 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 1], 3)
+            # r02 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 2], 3)
+            # r10 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 0], 3)
+            # r11 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 1], 3)
+            # r12 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 2], 3)
+            # r20 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 0], 3)
+            # r21 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 1], 3)
+            # r22 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 2], 3)
+
+            print(f'py_rotation: {zed_pose.get_rotation_matrix().r}')
             # print("Rotation: {0}, {1}, {2}, Timestamp: {3}\n".format(r00, r01, r02,
             #                                                          zed_pose.timestamp.get_milliseconds()))
             # print("          {0}, {1}, {2}, Timestamp: {3}\n".format(r00, r01, r02,
@@ -129,13 +133,18 @@ def main():
             # print("          {0}, {1}, {2}, Timestamp: {3}\n".format(r00, r01, r02,
             #                                                          zed_pose.timestamp.get_milliseconds()))
 
-            # get extrinsic matrix
-            print(py_rotation.get_infos())
-            py_rotation = py_rotation.r.T
-            py_translation = py_translation.get()
-            py_extrinsic = np.c_[py_rotation, py_translation]
-            # print(f'py_extrinsic: {py_extrinsic.view()}')
 
+
+            # get extrinsic matrix
+            # print(py_rotation.get_infos())
+            # py_rotation = py_rotation.r.T
+            # py_translation = py_translation.get()
+            # py_extrinsic = np.c_[py_rotation, py_translation]
+            py_extrinsic = np.c_[zed_pose.get_rotation_matrix().r, zed_pose.get_translation().get().reshape(3,1)]
+            print(f'py_extrinsic: {py_extrinsic.view()}')
+
+
+            continue
 
             # https://github.com/stereolabs/zed-examples/issues/226
             R = zed_pose.get_rotation_matrix(sl.Rotation()).r.T
@@ -226,9 +235,9 @@ def main():
 
             i = i + 2
 
-    path_l = 'images/rect_001_3_r5000.png'
-    path_r = 'images/rect_002_3_r5000.png'
-    depth_l = 'images/depth_map_0000.pfm' # depth0 is depth of image0 and image1. Likewise depth2 for image2 and image3
+    path_l = 'images2/rect_001_3_r5000.png'
+    path_r = 'images2/rect_002_3_r5000.png'
+    depth_l = 'images2/depth_map_0000.pfm' # depth0 is depth of image0 and image1. Likewise depth2 for image2 and image3
 
 
 
@@ -330,7 +339,7 @@ def main():
 
 def write_to_file(scene_info):
     for i in range(len(scene_info['ixts'])):
-        f = open( '{:08d}_cam.txt'.format(i), 'w+')
+        f = open( './cam/{:08d}_cam.txt'.format(i), 'w+')
 
         # write extrinsic
         f.write("extrinsic\n")
