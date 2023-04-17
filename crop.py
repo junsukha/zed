@@ -31,15 +31,33 @@ def main():
     path start from 0
     depth, cam starts from 1
     '''
-    path_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Rectified\scan114_train' \
-             r'\rect_009_3_r5000.png'
-    path_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Rectified\scan114_train' \
-             r'/rect_010_3_r5000.png'
-    depth_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Depths\scan114\depth_map_0008.pfm'
-    depth_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Depths\scan114\depth_map_0009.pfm'
+    # path_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Rectified\scan114_train' \
+    #          r'\rect_009_3_r5000.png'
+    # path_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Rectified\scan114_train' \
+    #          r'/rect_010_3_r5000.png'
+    # depth_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Depths\scan114\depth_map_0008.pfm'
+    # depth_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Depths\scan114\depth_map_0009.pfm'
+    #
+    # cam_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Cameras\train_temp\00000008_cam.txt'
+    # cam_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Cameras\train_temp\00000009_cam.txt'
 
-    cam_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Cameras\train_temp\00000008_cam.txt'
-    cam_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Cameras\train_temp\00000009_cam.txt'
+    '''
+    new sets
+    '''
+    path_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials\tutorial 5 - spatial mapping\python\images2\rect_001_3_r5000.png'
+    path_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+             r'\tutorial 5 - spatial mapping\python\images2\rect_005_3_r5000.png'
+
+    depth_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials\tutorial 5 - spatial mapping\python\images2\depth_map_0000.pfm'
+
+    depth_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+              r'\tutorial 5 - spatial mapping\python\images2\depth_map_0004.pfm'
+
+
+    cam_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials\tutorial 5 - spatial mapping\python\cam\00000000_cam.txt'
+    cam_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+            r'\tutorial 5 - spatial mapping\python\cam\00000004_cam.txt'
+
 
     l = cv2.imread(path_l)
     l_crop = l[104:616, 320:960]   # 104:616, 320:960
@@ -59,15 +77,18 @@ def main():
     ixt_l, ext_l, _ = read_cam_file(cam_l)
     ixt_r, ext_r, _ = read_cam_file(cam_r)
 
+    print(f'ext_r before: {ext_r}')
+
+    print(f'ext_r after: {ext_r}')
 
     print(f'ixt_l: {ixt_l}')
 
     '''
     adjust focal length
     '''
-    img_path =  r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data/Rectified/scan114_train/rect_{' \
-                r':03d}_3_r5000.png'.format(1)  # (720, 1280, 3)
-    img = cv2.imread(img_path)
+    # img_path =  r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data/Rectified/scan114_train/rect_{' \
+    #             r':03d}_3_r5000.png'.format(1)  # (720, 1280, 3)
+    img = cv2.imread(path_l)
     factor_y = 512 / img.shape[0]  # 512
     factor_x = 640 / img.shape[1]  # 640
 

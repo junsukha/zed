@@ -83,7 +83,8 @@ def main():
         if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
             # Get the pose of the left eye of the camera with reference to the world frame
             zed.get_position(zed_pose,
-                             sl.REFERENCE_FRAME.WORLD)  # zed_pose에 정보를 저장한다. #  the returned pose relates to the initial position of the camera
+                             sl.REFERENCE_FRAME.WORLD)  # zed_pose에 정보를 저장한다. #  the returned pose relates to the initial
+            # position of the camera
             zed.get_sensors_data(zed_sensors, sl.TIME_REFERENCE.IMAGE)
             zed_imu = zed_sensors.get_imu_data()
 
@@ -111,7 +112,7 @@ def main():
             # ty = round(zed_pose.get_translation(py_translation).get()[1], 3)
             # tz = round(zed_pose.get_translation(py_translation).get()[2], 3)
             # print("Translation: Tx: {0}, Ty: {1}, Tz {2}, Timestamp: {3}\n".format(tx, ty, tz, zed_pose.timestamp.get_milliseconds()))
-            print(f'py_translation: {zed_pose.get_translation().get()}')
+            # print(f'py_translation: {zed_pose.get_translation().get()}')
 
             py_rotation = sl.Rotation()
             # zed_pose.get_rotation_matrix(py_rotation)
@@ -125,7 +126,7 @@ def main():
             # r21 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 1], 3)
             # r22 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 2], 3)
 
-            print(f'py_rotation: {zed_pose.get_rotation_matrix().r}')
+            # print(f'py_rotation: {zed_pose.get_rotation_matrix().r}')
             # print("Rotation: {0}, {1}, {2}, Timestamp: {3}\n".format(r00, r01, r02,
             #                                                          zed_pose.timestamp.get_milliseconds()))
             # print("          {0}, {1}, {2}, Timestamp: {3}\n".format(r00, r01, r02,
@@ -144,8 +145,14 @@ def main():
             print(f'py_extrinsic: {py_extrinsic.view()}')
 
 
-            continue
 
+            # add row to extrinsic to make it 4*4
+            world2cam_left = np.vstack((py_extrinsic, np.array([0,0,0,1])))
+            print(f'after row: {world2cam_left}')
+
+
+
+            ''' 
             # https://github.com/stereolabs/zed-examples/issues/226
             R = zed_pose.get_rotation_matrix(sl.Rotation()).r.T
             t = zed_pose.get_translation(sl.Translation()).get()
@@ -153,27 +160,37 @@ def main():
             world2cam_left = np.vstack((world2cam_left, np.array([0, 0, 0, 1])))
             # print(f'\n world2cam_left: {world2cam_left.view()}') # this should be left sensor's. Need to calculate right
             # sensor's
+            '''
 
+            ''' add left image extrinsic '''
+            # scene_info['exts'].append(world2cam_left)
             scene_info['exts'].append(world2cam_left)
 
-            # Get the distance between the right eye and the left eye
+            ''' Get the distance between the right eye and the left eye '''
             translation_left_to_right_x = zed.get_camera_information().calibration_parameters.T[0] # just x coord?
-            translation_left_to_right = zed.get_camera_information().calibration_parameters.T #[6.30032063 0.         0.        ]
+            # translation_left_to_right = zed.get_camera_information().calibration_parameters.T #[6.30032063 0.         0.        ]
             # print(f'\n translation_left_to_right: {translation_left_to_right.view()}')
 
             # Get right sensor's extrinsic
-            m3_3 = np.hstack((np.zeros(shape=(3, 3)), translation_left_to_right.reshape(3,
-                                                                                 1)))
-            m4_4 = np.vstack((m3_3, np.array([0,0,0,1])))
-            world2cam_right = world2cam_left + m4_4 # wrong. this makes ext[3,3] = 2. should be 1
+            # m3_3 = np.hstack((np.zeros(shape=(3, 3)), translation_left_to_right.reshape(3,1)))
+            # m4_4 = np.vstack((m3_3, np.array([0,0,0,1])))
+            # world2cam_right = world2cam_left + m4_4 # wrong. this makes ext[3,3] = 2. should be 1
 
-
+            '''add right image extrinsic'''
+            world2cam_right = np.copy(world2cam_left)
+            world2cam_right[0, 3] = world2cam_right[0, 3] + translation_left_to_right_x
             # print(f'\n world2cam_right: {world2cam_right.view()}')
             scene_info['exts'].append(world2cam_right)
 
             # get intrinsic
             left_cam_info = zed.get_camera_information().calibration_parameters.left_cam
             right_cam_info = zed.get_camera_information().calibration_parameters.right_cam
+            # stereo_transform = zed.get_camera_information().calibration_parameters.stereo_transform
+            # print(f'stereo: {stereo_transform}')
+
+
+            print(f'left_cam_info shape: {left_cam_info}')
+
             l_fx = left_cam_info.fx
             l_fy = left_cam_info.fy
             l_cx = left_cam_info.cx
@@ -235,6 +252,11 @@ def main():
 
             i = i + 2
 
+    write_to_file(scene_info)
+    # Close the camera
+    zed.close()
+
+    exit()
     path_l = 'images2/rect_001_3_r5000.png'
     path_r = 'images2/rect_002_3_r5000.png'
     depth_l = 'images2/depth_map_0000.pfm' # depth0 is depth of image0 and image1. Likewise depth2 for image2 and image3
@@ -333,9 +355,9 @@ def main():
     # open3d.visualization.draw_geometries(pcd_r)'''
 
 
-    write_to_file(scene_info)
-    # Close the camera
-    zed.close()
+    # write_to_file(scene_info)
+    # # Close the camera
+    # zed.close()
 
 def write_to_file(scene_info):
     for i in range(len(scene_info['ixts'])):
