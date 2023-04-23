@@ -106,25 +106,25 @@ def main():
             cv2.imwrite('images2/depth_map_{:04d}.pfm'.format(i+1), depth_l.get_data())
 
             # Display the translation and timestamp
-            # py_translation = sl.Translation()
-            # tx = round(zed_pose.get_translation(py_translation).get()[0],
-            #            3)  # translation from the pose  # zed_pose 가 가지고 있는 translation 정보를 py_translation에 저장? # py_translation 없어도됨;
-            # ty = round(zed_pose.get_translation(py_translation).get()[1], 3)
-            # tz = round(zed_pose.get_translation(py_translation).get()[2], 3)
-            # print("Translation: Tx: {0}, Ty: {1}, Tz {2}, Timestamp: {3}\n".format(tx, ty, tz, zed_pose.timestamp.get_milliseconds()))
-            # print(f'py_translation: {zed_pose.get_translation().get()}')
+            py_translation = sl.Translation()
+            tx = round(zed_pose.get_translation(py_translation).get()[0],
+                       3)  # translation from the pose  # zed_pose 가 가지고 있는 translation 정보를 py_translation에 저장? # py_translation 없어도됨;
+            ty = round(zed_pose.get_translation(py_translation).get()[1], 3)
+            tz = round(zed_pose.get_translation(py_translation).get()[2], 3)
+            print("Translation: Tx: {0}, Ty: {1}, Tz {2}, Timestamp: {3}\n".format(tx, ty, tz, zed_pose.timestamp.get_milliseconds()))
+            print(f'py_translation: {zed_pose.get_translation().get()}')
 
             py_rotation = sl.Rotation()
-            # zed_pose.get_rotation_matrix(py_rotation)
-            # r00 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 0], 3)
-            # r01 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 1], 3)
-            # r02 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 2], 3)
-            # r10 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 0], 3)
-            # r11 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 1], 3)
-            # r12 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 2], 3)
-            # r20 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 0], 3)
-            # r21 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 1], 3)
-            # r22 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 2], 3)
+            zed_pose.get_rotation_matrix(py_rotation)
+            r00 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 0], 3)
+            r01 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 1], 3)
+            r02 = round(zed_pose.get_rotation_matrix(py_rotation)[0, 2], 3)
+            r10 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 0], 3)
+            r11 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 1], 3)
+            r12 = round(zed_pose.get_rotation_matrix(py_rotation)[1, 2], 3)
+            r20 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 0], 3)
+            r21 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 1], 3)
+            r22 = round(zed_pose.get_rotation_matrix(py_rotation)[2, 2], 3)
 
             # print(f'py_rotation: {zed_pose.get_rotation_matrix().r}')
             # print("Rotation: {0}, {1}, {2}, Timestamp: {3}\n".format(r00, r01, r02,
@@ -152,13 +152,21 @@ def main():
             pose_data = zed_pose.pose_data().m
             print(f'pose_data: {pose_data}')  # m is used to get numpy array :
             # https://www.stereolabs.com/docs/api/python/classpyzed_1_1sl_1_1Transform.html
-
+            print(f'rotation: {py_rotation.r.T}')
+            print(f'translation: {py_translation.get()}')
             world2cam_left = np.copy(pose_data)
             # rotation part
             world2cam_left[:3, :3] = pose_data[:3, :3].T
             # translation part
             world2cam_left[:3, 3] = -pose_data[:3, 3]
             # world2cam_left[:3, 3] = - world2cam_left[:3, :3] @ pose_data[:3, 3]
+
+            ''' new one '''
+            R = zed_pose.get_rotation_matrix(sl.Rotation()).r.T
+            t = zed_pose.get_translation(sl.Translation()).get()
+            world2cam_left = np.hstack((R, np.dot(-R, t).reshape(3, -1)))
+            world2cam_left = np.vstack((world2cam_left, np.array([0, 0, 0, 1])))
+            print(f'new: {world2cam_left}')
 
             ''' 
             # https://github.com/stereolabs/zed-examples/issues/226
@@ -196,19 +204,23 @@ def main():
 
             cam2world_left = np.copy(world2cam_left)
             cam2world_left[:3, :3] = world2cam_left[:3, :3].T
-            cam2world_left[:3, 3] = - world2cam_left[:3, :3].T @ world2cam_left[:3, 3]
+            cam2world_left[:3, 3] =  -world2cam_left[:3, :3].T @ world2cam_left[:3, 3]
+            # cam2world_left[:3, 3] = world2cam_left[:3, :3].T @ world2cam_left[:3, 3]
             # world2cam_right[:3, 3] = -( cam2world_left @ np.append(pose_data[:3, 3] + translation_left_to_right,
             #                                                        [0]) )[:3]
+            hom = (cam2world_left @ np.append(translation_left_to_right, [1]))
 
-            right_cam_pos_world_space = (cam2world_left @ np.append(translation_left_to_right, [1]))[:3] # this is
-            # right camera
-            # position in world space
+            hom = R.T @ hom[:3] # 이전 hom 이 이론상으로는 right cam pos 인데, 여기서도 rotation이 적용된값이면 그거 원상복귀
+            print(f'hom: {hom}')
+
+            right_cam_pos_world_space = hom[:3] # this is right camera position in world space
             print(right_cam_pos_world_space)
 
-            world2cam_right[:3, 3] = -right_cam_pos_world_space
+            # world2cam_right[:3, 3] = - world2cam_right[:3, :3]@right_cam_pos_world_space
+            world2cam_right = np.hstack((R,np.dot(-R, right_cam_pos_world_space).reshape(3,-1)))
+            world2cam_right = np.vstack((world2cam_right, np.array([0, 0, 0, 1])))
 
-
-
+            # world2cam_left = np.hstack((R, np.dot(-R, t).reshape(3, -1)))
             scene_info['exts'].append(world2cam_right)
 
             # left camera space 에서 +x 로 6.30이니까.   left camera space 에서 left camera pose 에다 6.40 을 한값을 다시 world space로

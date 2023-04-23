@@ -17,7 +17,7 @@ def main():
     바꿨을때 meshgrid 를 output shape에 맞게한 경우, crop 효과가 생김.
     '''
     l_img_num = 1
-    r_img_num = 8
+    r_img_num = 3
     l_dpt_num = l_img_num - 1
     r_dpt_num = r_img_num - 1
     l_cam_num = l_dpt_num
