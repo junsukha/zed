@@ -136,21 +136,29 @@ def main():
 
 
 
-            # get extrinsic matrix
-            # print(py_rotation.get_infos())
+            '''get extrinsic matrix old version'''
+            '''# print(py_rotation.get_infos())
             # py_rotation = py_rotation.r.T
             # py_translation = py_translation.get()
             # py_extrinsic = np.c_[py_rotation, py_translation]
             py_extrinsic = np.c_[zed_pose.get_rotation_matrix().r, zed_pose.get_translation().get().reshape(3,1)]
             print(f'py_extrinsic: {py_extrinsic.view()}')
 
-
-
             # add row to extrinsic to make it 4*4
             world2cam_left = np.vstack((py_extrinsic, np.array([0,0,0,1])))
-            print(f'after row: {world2cam_left}')
+            print(f'after row: {world2cam_left}')'''
 
+            '''get extrinsic matrix new version'''
+            pose_data = zed_pose.pose_data().m
+            print(f'pose_data: {pose_data}')  # m is used to get numpy array :
+            # https://www.stereolabs.com/docs/api/python/classpyzed_1_1sl_1_1Transform.html
 
+            world2cam_left = np.copy(pose_data)
+            # rotation part
+            world2cam_left[:3, :3] = pose_data[:3, :3].T
+            # translation part
+            world2cam_left[:3, 3] = -pose_data[:3, 3]
+            # world2cam_left[:3, 3] = - world2cam_left[:3, :3] @ pose_data[:3, 3]
 
             ''' 
             # https://github.com/stereolabs/zed-examples/issues/226
@@ -166,10 +174,13 @@ def main():
             # scene_info['exts'].append(world2cam_left)
             scene_info['exts'].append(world2cam_left)
 
+            print(f'world2cam_left: {world2cam_left}')
+
             ''' Get the distance between the right eye and the left eye '''
             translation_left_to_right_x = zed.get_camera_information().calibration_parameters.T[0] # just x coord?
-            # translation_left_to_right = zed.get_camera_information().calibration_parameters.T #[6.30032063 0.         0.        ]
-            # print(f'\n translation_left_to_right: {translation_left_to_right.view()}')
+            translation_left_to_right = zed.get_camera_information().calibration_parameters.T #[6.30032063 0.         0.        ]
+            print(f'\n translation_left_to_right: {translation_left_to_right.view()}')
+
 
             # Get right sensor's extrinsic
             # m3_3 = np.hstack((np.zeros(shape=(3, 3)), translation_left_to_right.reshape(3,1)))
@@ -178,9 +189,34 @@ def main():
 
             '''add right image extrinsic'''
             world2cam_right = np.copy(world2cam_left)
-            world2cam_right[0, 3] = world2cam_right[0, 3] + translation_left_to_right_x
+            # world2cam_right[0, 3] = world2cam_right[0, 3] + translation_left_to_right_x
+            # world2cam_right[:, 3] = world2cam_right[:, 3] - np.append(translation_left_to_right,[0])
+            # world2cam_right[:, 3] = np.append(world2cam_left[:3,:3] @ world2cam_left[:3, 3] - translation_left_to_right, [0])
             # print(f'\n world2cam_right: {world2cam_right.view()}')
+
+            cam2world_left = np.copy(world2cam_left)
+            cam2world_left[:3, :3] = world2cam_left[:3, :3].T
+            cam2world_left[:3, 3] = - world2cam_left[:3, :3].T @ world2cam_left[:3, 3]
+            # world2cam_right[:3, 3] = -( cam2world_left @ np.append(pose_data[:3, 3] + translation_left_to_right,
+            #                                                        [0]) )[:3]
+
+            right_cam_pos_world_space = (cam2world_left @ np.append(translation_left_to_right, [1]))[:3] # this is
+            # right camera
+            # position in world space
+            print(right_cam_pos_world_space)
+
+            world2cam_right[:3, 3] = -right_cam_pos_world_space
+
+
+
             scene_info['exts'].append(world2cam_right)
+
+            # left camera space 에서 +x 로 6.30이니까.   left camera space 에서 left camera pose 에다 6.40 을 한값을 다시 world space로
+            # 옮긴다음에 다시 right camera space 로.
+
+
+
+            print(f'world2cam_right: {world2cam_right}')
 
             # get intrinsic
             left_cam_info = zed.get_camera_information().calibration_parameters.left_cam

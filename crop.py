@@ -16,7 +16,12 @@ def main():
     즉 input 과 output 의 shape 을 내가 직접 고정할수 있어야함. input 은 original image, output은 cropped size로. 그래야 ixt matrices 를
     바꿨을때 meshgrid 를 output shape에 맞게한 경우, crop 효과가 생김.
     '''
-
+    l_img_num = 1
+    r_img_num = 8
+    l_dpt_num = l_img_num - 1
+    r_dpt_num = r_img_num - 1
+    l_cam_num = l_dpt_num
+    r_cam_num = r_dpt_num
     '''
     Cropped images
     '''
@@ -32,31 +37,40 @@ def main():
     depth, cam starts from 1
     '''
     # path_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Rectified\scan114_train' \
-    #          r'\rect_009_3_r5000.png'
+    #          r'\rect_{:03d}_3_r5000.png'.format(l_img_num)
     # path_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Rectified\scan114_train' \
-    #          r'/rect_010_3_r5000.png'
-    # depth_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Depths\scan114\depth_map_0008.pfm'
-    # depth_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Depths\scan114\depth_map_0009.pfm'
+    #          r'/rect_{:03d}_3_r5000.png'.format(r_img_num)
+    # depth_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Depths\scan114\depth_map_{' \
+    #           r':04d}.pfm'.format(l_dpt_num)
+    # depth_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Depths\scan114\depth_map_{' \
+    #           r':04d}.pfm'.format(r_dpt_num)
     #
-    # cam_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Cameras\train_temp\00000008_cam.txt'
-    # cam_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Cameras\train_temp\00000009_cam.txt'
+    # cam_l = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Cameras\train_temp\{' \
+    #         r':08d}_cam.txt'.format(l_cam_num)
+    # cam_r = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data\Cameras\train_temp\{' \
+    #         r':08d}_cam.txt'.format(r_cam_num)
 
     '''
     new sets
     '''
-    path_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials\tutorial 5 - spatial mapping\python\images2\rect_001_3_r5000.png'
-    path_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-             r'\tutorial 5 - spatial mapping\python\images2\rect_005_3_r5000.png'
 
-    depth_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials\tutorial 5 - spatial mapping\python\images2\depth_map_0000.pfm'
+
+    path_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+             r'\tutorial 5 - spatial mapping\python\images2\rect_{:03d}_3_r5000.png'.format(l_img_num)
+    path_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+             r'\tutorial 5 - spatial mapping\python\images2\rect_{:03d}_3_r5000.png'.format(r_img_num)
+
+    depth_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+              r'\tutorial 5 - spatial mapping\python\images2\depth_map_{:04d}.pfm'.format(l_dpt_num)
 
     depth_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-              r'\tutorial 5 - spatial mapping\python\images2\depth_map_0004.pfm'
+              r'\tutorial 5 - spatial mapping\python\images2\depth_map_{:04d}.pfm'.format(r_dpt_num)
 
 
-    cam_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials\tutorial 5 - spatial mapping\python\cam\00000000_cam.txt'
+    cam_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+            r'\tutorial 5 - spatial mapping\python\cam\{:08d}_cam.txt'.format(l_cam_num)
     cam_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-            r'\tutorial 5 - spatial mapping\python\cam\00000004_cam.txt'
+            r'\tutorial 5 - spatial mapping\python\cam\{:08d}_cam.txt'.format(r_cam_num)
 
 
     l = cv2.imread(path_l)
@@ -77,11 +91,12 @@ def main():
     ixt_l, ext_l, _ = read_cam_file(cam_l)
     ixt_r, ext_r, _ = read_cam_file(cam_r)
 
-    print(f'ext_r before: {ext_r}')
+    print(f'ext_r before: \n{ext_r}')
+    # ext_r[0, 3] = ext_r[0, 3]
+    # ext_r[1, 3] = ext_r[1, 3] - 6.3003 * 2
+    print(f'ext_r after: \n{ext_r}')
 
-    print(f'ext_r after: {ext_r}')
-
-    print(f'ixt_l: {ixt_l}')
+    print(f'ext_l: \n{ext_l}')
 
     '''
     adjust focal length
@@ -108,6 +123,8 @@ def main():
     print(f'ixt_l_crop: {ixt_l_crop}')
     h = 512 # l.shape[0] # the size i cropped to. the size i want the output image to be
     w = 640 # l.shape[1]
+    # h = l.shape[0]
+    # w = l.shape[1]
 
     h_crop = 512
     w_crop = 640
@@ -159,12 +176,33 @@ def main():
     print(np.max(i2c_l[:, [0]]))
 
     # convert camera space into world space
-    # c2w_l = np.sum(i2c_l[..., None, :] * np.linalg.inv(ext_l)[None, ...], axis=-1)
-    c2w_l = np.sum(i2c_l[..., None, :] * (ext_l.T)[None, ...], axis=-1)
-    c2w_l_crop = np.sum(ic2_l_crop[..., None, :] * (ext_l.T)[None, ...], axis=-1)
-    c2w_r = np.sum(i2c_r[..., None, :] * (ext_r.T)[None, ...], axis=-1)
+    ext_l[:3, :3] = (ext_l[:3, :3]).T
+    ext_l[:3, 3] = -ext_l[:3, :3] @ ext_l[:3, 3]
 
-    print(c2w_l[:5])
+
+    ext_r[:3, :3] = (ext_r[:3, :3]).T
+    ext_r[:3, 3] = -ext_r[:3, :3] @ ext_r[:3, 3]
+
+    # doing here what I did in bvc.py
+    # ext_r[0, 3] += 12.3003
+    # ext_r[:3, :3] = ext_r[:3, :3].T
+    # ext_r[:3, 3] = -ext_r[:3, :3] @ ext_r[:3, 3]
+    # ext_r[:3, 3] -= ext_r[:3, 3]
+    # ext_r[:3, 3] -= ext_l[:3, 3]
+    # ext_r[0, 3] -= 6.3003
+
+
+    print(f'ext_r: {ext_r}')
+
+    c2w_l = np.sum(i2c_l[..., None, :] * ext_l[None, ...], axis=-1)
+    # c2w_l = np.sum(i2c_l[..., None, :] * np.linalg.inv(ext_l)[None, ...], axis=-1)
+    # c2w_l = np.sum(i2c_l[..., None, :] * (ext_l.T)[None, ...], axis=-1)
+
+    c2w_l_crop = np.sum(ic2_l_crop[..., None, :] * (ext_l.T)[None, ...], axis=-1)
+
+    c2w_r = np.sum(i2c_r[..., None, :] * ext_r[None, ...], axis=-1)
+    # c2w_r = np.sum(i2c_r[..., None, :] * np.linalg.inv(ext_r)[None, ...], axis=-1)
+    # c2w_r = np.sum(i2c_r[..., None, :] * (ext_r.T)[None, ...], axis=-1)
 
     # homogenous to normal coordinate
     c2w_l = c2w_l[:, :3] #.reshape(h,w,3).astype(float)
@@ -176,7 +214,6 @@ def main():
     pcd_l_crop = o3d.geometry.PointCloud()
     pcd_r = o3d.geometry.PointCloud()
 
-    print(type(c2w_l))
 
     # convert np array to vector of 3d vectors
     pcd_l.points = o3d.utility.Vector3dVector(c2w_l)
