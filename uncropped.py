@@ -17,7 +17,7 @@ def main():
     바꿨을때 meshgrid 를 output shape에 맞게한 경우, crop 효과가 생김.
     '''
     l_img_num = 5
-    r_img_num = 9
+    r_img_num = 6
     l_dpt_num = l_img_num - 1
     r_dpt_num = r_img_num - 1
     l_cam_num = l_dpt_num
@@ -102,6 +102,7 @@ def main():
 
     print(f'l.shape: {l.shape}')
     print(f'd.shape: {d_l.shape}')
+    print(f'r.shape: {r.shape}')
 
     # import imageio
     # import matplotlib.pyplot as plt
@@ -143,6 +144,7 @@ def main():
 
     ixt_l, ext_l, _ = read_cam_file(cam_l)
     ixt_r, ext_r, _ = read_cam_file(cam_r)
+    ixt_l[0][2] -= 22 # because we cropped left edge of left image
 
     print(f'ext_r before: \n{ext_r}')
     # ext_r[0, 3] = ext_r[0, 3]
@@ -183,7 +185,7 @@ def main():
     print(f'ixt_l_crop: {ixt_l_crop}')
     h = l.shape[0] # the size i cropped to. the size i want the output image to be
     # w = l.shape[1]
-    w = l.shape[1] - 22
+    w = l.shape[1]
 
     # h = l.shape[0]
     # w = l.shape[1]
@@ -198,6 +200,7 @@ def main():
     ys = ys.reshape(-1, 1)
     uv2 = np.column_stack((xs, ys)).reshape(h, w, 2)
     print(f'uv2: {uv2[:5]}')
+    print(f'uv2.shape: {uv2.shape}')
 
     xs_crop, ys_crop = np.meshgrid(np.arange(w_crop), np.arange(h_crop), indexing='xy')
     xs_crop = xs_crop.reshape(-1, 1)
