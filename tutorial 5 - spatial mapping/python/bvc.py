@@ -22,20 +22,23 @@ import pyzed.sl as sl
 import numpy as np
 import cv2
 from open3d import *
+import open3d as o3d
+import math
 # from lib.utils import data_utils
 workspace = r'\\wsl.localhost\Ubuntu-20.04\home\junsukhaa\BVC\data\dtu\zed_data'
 take_photos = True
-def transform_pose(pose, tx):
+def transform_pose(pose, tx) :
     transform_ = sl.Transform()
     transform_.set_identity()
     # Translate the tracking frame by tx along the X axis
-    print(f'transform_ shape: {transform_.m.shape}')
-    transform_[0, 3] = tx
+    # print(f'transform_ shape: {transform_.m.shape}')
+    transform_[0,3] = tx
     # Pose(new reference frame) = M.inverse() * pose (camera frame) * M, where M is the transform between the two frames
     transform_inv = sl.Transform()
     transform_inv.init_matrix(transform_)
     transform_inv.inverse()
-    pose = transform_inv * pose * transform_
+    new_pose = transform_inv * pose * transform_
+    return new_pose
 
 
 def main():
@@ -47,8 +50,9 @@ def main():
         init_params = sl.InitParameters()
         init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode (default fps: 60)
         # Use a right-handed Y-up coordinate system
-        init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
+        init_params.coordinate_system = sl.COORDINATE_SYSTEM.IMAGE
         init_params.coordinate_units = sl.UNIT.CENTIMETER  # Set units in meters
+        init_params.depth_mode = sl.DEPTH_MODE.ULTRA
 
         # Open the camera
         err = zed.open(init_params)
@@ -69,6 +73,7 @@ def main():
         zed_sensors = sl.SensorsData()
         runtime_parameters = sl.RuntimeParameters()
         runtime_parameters.sensing_mode = sl.SENSING_MODE.FILL
+        # runtime_parameters.sensing_mode = sl.SENSING_MODE.STANDARD
 
         # images will be saved here
         image_l = sl.Mat(zed.get_camera_information().camera_resolution.width,
@@ -81,30 +86,73 @@ def main():
         scene_info = {'ixts': [], 'exts': [], 'dpt_paths': [], 'img_paths': []}
 
         while i < 10:
+        # while True:
             if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
                 # Get the pose of the left eye of the camera with reference to the world frame
-                zed.get_position(zed_pose,
-                                 sl.REFERENCE_FRAME.WORLD)  # zed_pose에 정보를 저장한다. #  the returned pose relates to the initial
+                zed.get_position(zed_pose, sl.REFERENCE_FRAME.WORLD)  # zed_pose에 정보를 저장한다. #  the returned pose relates to the initial
                 # position of the camera
                 zed.get_sensors_data(zed_sensors, sl.TIME_REFERENCE.IMAGE)
                 zed_imu = zed_sensors.get_imu_data()
 
                 # A new image is available if grab() returns SUCCESS
                 zed.retrieve_image(image_l, sl.VIEW.LEFT)
+                # print(zed_pose.timestamp.get_milliseconds())
                 zed.retrieve_image(image_r, sl.VIEW.RIGHT)
 
                 image_zed_l = image_l.get_data()
                 image_zed_r = image_r.get_data()
 
+                # get depth map
                 zed.retrieve_measure(depth_l, sl.MEASURE.DEPTH)
 
+                '''# show depth map
+                # depth_value = depth_map.get_value(x, y)
+                depth_l_cv = depth_l.get_data()
+                print(f'measure depth: {depth_l_cv[:5, :5]}')
+                print(f'measure depth max: {np.max(depth_l_cv)}')
+
+                # Convert the depth map to a point cloud
+                point_cloud = sl.Mat()
+                zed.retrieve_measure(point_cloud, sl.MEASURE.XYZ)
+
+                # Convert the point cloud to an Open3D point cloud
+                point_cloud_data = np.copy(point_cloud.get_data())
+                o3d_point_cloud = o3d.geometry.PointCloud()
+                o3d_point_cloud.points = o3d.utility.Vector3dVector(point_cloud_data[:, :, :3].reshape(-1, 3))
+
+                print(f'point_cloud_data.shape: {point_cloud_data.shape}')
+                # Set the color of each point to a shade of gray based on its distance from the camera
+                o3d_point_cloud.colors = o3d.utility.Vector3dVector(image_zed_l[:, :, :3].reshape(-1,3).astype(np.float64) / 255.0)
+                # o3d_point_cloud.colors = o3d.utility.Vector3dVector(point_cloud_data[:, :, :3].reshape(-1, 3) / 255.0)
+
+                # distances = np.linalg.norm(point_cloud_data[:, :, :3], axis=2)
+                # min_distance = np.min(distances)
+                # max_distance = np.max(distances)
+                # gray_colors = np.interp(distances, (min_distance, max_distance), (0, 255)).astype(np.uint8)
+                # o3d_point_cloud.colors = o3d.utility.Vector3dVector(np.tile(gray_colors.reshape(-1, 1) / 255.0, (1, 3)))
+
+                # Visualize the point cloud using Open3D
+                vis = o3d.visualization.Visualizer()
+                vis.create_window("Point Cloud Viewer", width=image_zed_l.shape[1], height=image_zed_l.shape[0])
+                vis.add_geometry(o3d_point_cloud)
+                vis.run()
+                cv2.waitKey(0)'''
+
+                # retrieve normalized depth image
+                # zed.retrieve_image(depth_l, sl.VIEW.DEPTH)
+                # image_depth = depth_l.get_data()
+                # print(f'image depth shape : {image_depth.shape}')
+                # print(f'image depth: {image_depth[:5, :5]}')
+                # cv2.imshow('image_depth', image_depth)
+                # cv2.waitKey(0)
+
                 # save image in current directory
-                cv2.imwrite('images2/rect_{:03d}_3_r5000.png'.format(i+1), image_zed_l)
-                cv2.imwrite('images2/rect_{:03d}_3_r5000.png'.format(i+2), image_zed_r)
+                cv2.imwrite('closeimages/rect_{:03d}_3_r5000.png'.format(i+1), image_zed_l)
+                cv2.imwrite('closeimages/rect_{:03d}_3_r5000.png'.format(i+2), image_zed_r)
 
                 # print(f'depth_ls.shape: {depth_l.get_data().shape}')
-                cv2.imwrite('images2/depth_map_{:04d}.pfm'.format(i), depth_l.get_data())
-                cv2.imwrite('images2/depth_map_{:04d}.pfm'.format(i+1), depth_l.get_data())
+                cv2.imwrite('closeimages/depth_map_{:04d}.pfm'.format(i), depth_l.get_data())
+                cv2.imwrite('closeimages/depth_map_{:04d}.pfm'.format(i+1), depth_l.get_data())
 
                 # Display the translation and timestamp
                 py_translation = sl.Translation()
@@ -151,10 +199,10 @@ def main():
 
                 '''get extrinsic matrix new version'''
                 pose_data = zed_pose.pose_data().m
-                print(f'pose_data: {pose_data}')  # m is used to get numpy array :
+                # print(f'pose_data: {pose_data}')  # m is used to get numpy array :
                 # https://www.stereolabs.com/docs/api/python/classpyzed_1_1sl_1_1Transform.html
-                print(f'rotation: {py_rotation.r.T}')
-                print(f'translation: {py_translation.get()}')
+                # print(f'rotation: {py_rotation.r.T}')
+                # print(f'translation: {py_translation.get()}')
                 world2cam_left = np.copy(pose_data)
                 # rotation part
                 world2cam_left[:3, :3] = pose_data[:3, :3].T
@@ -165,10 +213,37 @@ def main():
                 ''' new one '''
                 R = zed_pose.get_rotation_matrix(sl.Rotation()).r
                 t = zed_pose.get_translation(sl.Translation()).get()
+                # print(f'R: {R}')
+                # print(f't: {t}')
+                # print(f'angle_z: {math.atan2(R[1,0], R[0,0])}')
+                # print(f'angles: {zed_pose.get_euler_angles(radian=False)}')
+
+
                 world2cam_left = np.hstack((R.T, np.dot(-R.T, t).reshape(3, -1))) # -t bc t they give me is not really
                 # translation of ext matrix. also np.dot(-R.T, -t) is for inversing ext mat.
                 world2cam_left = np.vstack((world2cam_left, np.array([0, 0, 0, 1])))
-                print(f'new: {world2cam_left}')
+                # print(f'new: {world2cam_left}')
+                # print(f'extrinsic timestamp: {zed_pose.timestamp.get_milliseconds()}')
+
+                ''' trial '''
+                # cam2world_left = np.copy(world2cam_left)
+                # cam2world_left[:3, :3] = world2cam_left[:3, :3].T
+                # cam2world_left[:3, 3] = -world2cam_left[:3, :3].T @ world2cam_left[:3, 3]
+                # # cam2world_left[:3, 3] = world2cam_left[:3, :3].T @ world2cam_left[:3, 3]
+                # # world2cam_right[:3, 3] = -( cam2world_left @ np.append(pose_data[:3, 3] + translation_left_to_right,
+                # #                                                        [0]) )[:3]
+                # hom = (cam2world_left @ np.append(translation_left_to_right, [1]))
+                #
+                # hom = hom[:3]  # 이전 hom 이 이론상으로는 right cam pos 인데, 여기서도 rotation이 적용된값이면 그거 원상복귀
+                # print(f'hom: {hom}')
+                #
+                # right_cam_pos_world_space = hom[:3]  # this is right camera position in world space
+                # print(right_cam_pos_world_space)
+                #
+                # # world2cam_right[:3, 3] = - world2cam_right[:3, :3]@right_cam_pos_world_space
+                # world2cam_right = np.hstack((R.T, np.dot(-R.T, right_cam_pos_world_space).reshape(3, -1)))
+                # world2cam_right = np.vstack((world2cam_right, np.array([0, 0, 0, 1])))
+                ''' trial ends'''
 
                 ''' 
                 # https://github.com/stereolabs/zed-examples/issues/226
@@ -184,12 +259,12 @@ def main():
                 # scene_info['exts'].append(world2cam_left)
                 scene_info['exts'].append(world2cam_left)
 
-                print(f'world2cam_left: {world2cam_left}')
+                # print(f'world2cam_left: {world2cam_left}')
 
                 ''' Get the distance between the right eye and the left eye '''
                 translation_left_to_right_x = zed.get_camera_information().calibration_parameters.T[0] # just x coord?
                 translation_left_to_right = zed.get_camera_information().calibration_parameters.T #[6.30032063 0.         0.        ]
-                print(f'\n translation_left_to_right: {translation_left_to_right.view()}')
+                # print(f'\n translation_left_to_right: {translation_left_to_right.view()}')
 
 
                 # Get right sensor's extrinsic
@@ -213,16 +288,32 @@ def main():
                 hom = (cam2world_left @ np.append(translation_left_to_right, [1]))
 
                 hom = hom[:3] # 이전 hom 이 이론상으로는 right cam pos 인데, 여기서도 rotation이 적용된값이면 그거 원상복귀
-                print(f'hom: {hom}')
+                # print(f'hom: {hom}')
 
                 right_cam_pos_world_space = hom[:3] # this is right camera position in world space
-                print(right_cam_pos_world_space)
+                # print(right_cam_pos_world_space)
 
                 # world2cam_right[:3, 3] = - world2cam_right[:3, :3]@right_cam_pos_world_space
                 world2cam_right = np.hstack((R.T,np.dot(-R.T, right_cam_pos_world_space).reshape(3,-1)))
                 world2cam_right = np.vstack((world2cam_right, np.array([0, 0, 0, 1])))
 
-                # world2cam_right[0,3] += right_cam_pos_world_space[0]
+                ''' new '''
+                # Get the distance between the right eye and the left eye
+                translation_left_to_right = zed.get_camera_information().calibration_parameters.T[0]
+                # Retrieve and transform the pose data into a new frame located at the right camera
+                # tracking_state = zed.get_position(zed_pose, sl.REFERENCE_FRAME.WORLD)
+                # print(f'translation_left_to_right: {translation_left_to_right}')
+
+                new_pose = transform_pose(zed_pose.pose_data(), translation_left_to_right)
+
+                R = new_pose.m[:3, :3]
+                t = new_pose.m[:3, 3]
+
+                world2cam_right = np.hstack((R.T, np.dot(-R.T, t).reshape(3, -1)))  # -t bc t they give me is not really
+                # translation of ext matrix. also np.dot(-R.T, -t) is for inversing ext mat.
+                world2cam_right = np.vstack((world2cam_right, np.array([0, 0, 0, 1])))
+
+
                 scene_info['exts'].append(world2cam_right)
 
                 # left camera space 에서 +x 로 6.30이니까.   left camera space 에서 left camera pose 에다 6.40 을 한값을 다시 world space로
@@ -230,7 +321,7 @@ def main():
 
 
                 # world2cam_right = world2cam_left
-                print(f'world2cam_right: {world2cam_right}')
+                # print(f'world2cam_right: {world2cam_right}')
 
                 # get intrinsic
                 left_cam_info = zed.get_camera_information().calibration_parameters.left_cam
@@ -239,7 +330,7 @@ def main():
                 # print(f'stereo: {stereo_transform}')
 
 
-                print(f'left_cam_info shape: {left_cam_info}')
+                # print(f'left_cam_info shape: {left_cam_info}')
 
                 l_fx = left_cam_info.fx
                 l_fy = left_cam_info.fy
@@ -301,6 +392,9 @@ def main():
                 # print("IMU Orientation: Ox: {0}, Oy: {1}, Oz {2}, Ow: {3}\n".format(ox, oy, oz, ow))
 
                 i = i + 2
+                input("Press Enter to continue...")
+                # print("wtffffffffffffffffffffffffffffffffffffff")
+
 
         write_to_file(scene_info)
         # Close the camera
@@ -314,14 +408,24 @@ def main():
         l_cam_num = l_dpt_num
         r_cam_num = r_dpt_num
         # path_l = 'images2/rect_001_3_r5000.png'
-        path_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-                 r'\tutorial 5 - spatial mapping\python\images2\rect_{:03d}_3_r5000.png'.format(l_img_num)
+        # path_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+        #          r'\tutorial 5 - spatial mapping\python\images2\rect_{:03d}_3_r5000.png'.format(l_img_num)
         # path_r = 'images2/rect_002_3_r5000.png'
-        path_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-                 r'\tutorial 5 - spatial mapping\python\images2\rect_{:03d}_3_r5000.png'.format(r_img_num)
+        # path_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+        #          r'\tutorial 5 - spatial mapping\python\images2\rect_{:03d}_3_r5000.png'.format(r_img_num)
         # depth_l = 'images2/depth_map_0000.pfm' # depth0 is depth of image0 and image1. Likewise depth2 for image2 and image3
+        # depth_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+        #           r'\tutorial 5 - spatial mapping\python\images2\depth_map_{:04d}.pfm'.format(l_dpt_num)
+
+
+        path_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+                 r'\tutorial 5 - spatial mapping\python\closeimages\rect_{:03d}_3_r5000.png'.format(l_img_num)
+
+        path_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
+                 r'\tutorial 5 - spatial mapping\python\closeimages\rect_{:03d}_3_r5000.png'.format(r_img_num)
+
         depth_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-                  r'\tutorial 5 - spatial mapping\python\images2\depth_map_{:04d}.pfm'.format(l_dpt_num)
+                  r'\tutorial 5 - spatial mapping\python\closeimages\depth_map_{:04d}.pfm'.format(l_dpt_num)
 
 
         l = cv2.imread(path_l)

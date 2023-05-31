@@ -17,7 +17,7 @@ def main():
     바꿨을때 meshgrid 를 output shape에 맞게한 경우, crop 효과가 생김.
     '''
     l_img_num = 1
-    r_img_num = 7
+    r_img_num = 2
     l_dpt_num = l_img_num - 1
     r_dpt_num = r_img_num - 1
     l_cam_num = l_dpt_num
@@ -85,6 +85,9 @@ def main():
     d_l = d_l[104:616, 320:960]
     d_r = d_r[104:616, 320:960]
 
+    print(f' d_l[:5, :5]: {d_l[:5, :5]}')
+    print(f' d_r[:5, :5]: {d_r[:5, :5]}')
+
     print(f'l.shape: {l.shape}') #  (720, 1280, 3)
     print(f'd.shape: {d_l.shape}')
 
@@ -94,6 +97,7 @@ def main():
     print(f'ext_r before: \n{ext_r}')
     # ext_r[0, 3] = ext_r[0, 3]
     # ext_r[1, 3] = ext_r[1, 3] - 6.3003 * 2
+    # ext_l[:3, 3] = 0
     print(f'ext_r after: \n{ext_r}')
 
     print(f'ext_l: \n{ext_l}')
@@ -261,7 +265,12 @@ def main():
 
     # visualize point cloud
     # o3d.visualization.draw_geometries([pcd_r])
+
     o3d.visualization.draw_geometries([pcd_l, pcd_r])
+
+    o3d.visualization.draw_geometries([pcd_l])
+
+    o3d.visualization.draw_geometries([pcd_r])
     # o3d.visualization.draw_geometries([pcd_l, pcd_r])
 
 if __name__ == "__main__":

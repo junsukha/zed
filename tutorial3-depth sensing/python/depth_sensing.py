@@ -23,6 +23,7 @@ import math
 import numpy as np
 import sys
 import cv2
+import open3d as o3d
 
 def main():
     img = cv2.imread('depth.pfm', cv2.IMREAD_UNCHANGED)
@@ -75,11 +76,29 @@ def main():
             zed.retrieve_measure(depth_zed, sl.MEASURE.DEPTH)
             depth_ocv = depth_zed.get_data()
 
-            cv2.imwrite('depth.pfm', depth_ocv)
+            # Retrieve point cloud
+            # zed.retrieve_measure(point_cloud)
+
+            # cv2.imwrite('depth.pfm', depth_ocv)
             
             # Retrieve colored point cloud. Point cloud is aligned on the left image.
             zed.retrieve_measure(point_cloud, sl.MEASURE.XYZRGBA)
+            point_cloud_np = point_cloud.get_data()
+            # print(point_cloud_np.shape) # (720, 1280, 4)
+            # print(point_cloud_np[:2, :2, :])
+            print(point_cloud_np.max())
+            point_cloud_np = point_cloud_np.reshape(-1, 4)[:, :3]
+            
 
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(point_cloud_np)
+
+            vis_temp = o3d.visualization.VisualizerWithKeyCallback()
+            vis_temp.create_window()
+            vis_temp.add_geometry(pcd)
+
+            vis_temp.run()
+            # vis.destroy_window()
             '''
             # Get and print distance value in mm at the center of the image
             # We measure the distance camera - object using Euclidean distance
@@ -103,6 +122,7 @@ def main():
                 print("Your camera is probably too close to the scene, please move it backwards.\n")
             sys.stdout.flush()
             '''
+        i+=1
     # Close the camera
     zed.close()
     
