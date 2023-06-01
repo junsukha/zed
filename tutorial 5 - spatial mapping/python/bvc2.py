@@ -51,7 +51,7 @@ def main():
         init_params.camera_resolution = sl.RESOLUTION.HD720  # Use HD720 video mode (default fps: 60)
         # Use a right-handed Y-up coordinate system
         init_params.coordinate_system = sl.COORDINATE_SYSTEM.IMAGE
-        init_params.coordinate_units = sl.UNIT.METER  # Set units in meters
+        init_params.coordinate_units = sl.UNIT.CENTIMETER  # Set units in meters
 
         # Open the camera
         err = zed.open(init_params)
@@ -102,12 +102,12 @@ def main():
                 zed.retrieve_measure(depth_l, sl.MEASURE.DEPTH)
 
                 # save image in current directory
-                cv2.imwrite('closeimages/rect_{:03d}_3_r5000.png'.format(i + 1), image_zed_l)
-                cv2.imwrite('closeimages/rect_{:03d}_3_r5000.png'.format(i + 2), image_zed_r)
+                cv2.imwrite('new_images/rect_{:03d}_3_r5000.png'.format(i + 1), image_zed_l)
+                cv2.imwrite('new_images/rect_{:03d}_3_r5000.png'.format(i + 2), image_zed_r)
 
                 # print(f'depth_ls.shape: {depth_l.get_data().shape}')
-                cv2.imwrite('closeimages/depth_map_{:04d}.pfm'.format(i), depth_l.get_data())
-                cv2.imwrite('closeimages/depth_map_{:04d}.pfm'.format(i + 1), depth_l.get_data())
+                cv2.imwrite('new_images/depth_map_{:04d}.pfm'.format(i), depth_l.get_data())
+                cv2.imwrite('new_images/depth_map_{:04d}.pfm'.format(i + 1), depth_l.get_data())
 
                 # Display the translation and timestamp
                 py_translation = sl.Translation()
@@ -440,7 +440,7 @@ def main():
 
 def write_to_file(scene_info):
     for i in range(len(scene_info['ixts'])):
-        f = open('./cam/{:08d}_cam.txt'.format(i), 'w+')
+        f = open('./new_cam/{:08d}_cam.txt'.format(i), 'w+')
 
         # write extrinsic
         f.write("extrinsic\n")

@@ -16,8 +16,8 @@ def main():
     즉 input 과 output 의 shape 을 내가 직접 고정할수 있어야함. input 은 original image, output은 cropped size로. 그래야 ixt matrices 를
     바꿨을때 meshgrid 를 output shape에 맞게한 경우, crop 효과가 생김.
     '''
-    l_img_num = 5
-    r_img_num = 6
+    l_img_num = 1
+    r_img_num = 2
     l_dpt_num = l_img_num - 1
     r_dpt_num = r_img_num - 1
     l_cam_num = l_dpt_num
@@ -72,31 +72,31 @@ def main():
              r'\tutorial 5 - spatial mapping\python\closeimages\rect_{:03d}_3_r5000.png'.format(r_img_num)
 
     depth_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-              r'\tutorial 5 - spatial mapping\python\closeimages\depth_map_{:04d}.pfm'.format(l_dpt_num)
+              r'\tutorial 5 - spatial mapping\python\new_images\depth_map_{:04d}.pfm'.format(l_dpt_num)
 
     depth_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
               r'\tutorial 5 - spatial mapping\python\closeimages\depth_map_{:04d}.pfm'.format(r_dpt_num)
 
 
     cam_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-            r'\tutorial 5 - spatial mapping\python\cam\{:08d}_cam.txt'.format(l_cam_num)
+            r'\tutorial 5 - spatial mapping\python\new_cam\{:08d}_cam.txt'.format(l_cam_num)
     cam_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-            r'\tutorial 5 - spatial mapping\python\cam\{:08d}_cam.txt'.format(r_cam_num)
+            r'\tutorial 5 - spatial mapping\python\new_cam\{:08d}_cam.txt'.format(r_cam_num)
 
-
+    offset = 18
     l = cv2.imread(path_l)
     l_crop = l[104:616, 320:960]   # 104:616, 320:960
-    l = l[:, 22:]
+    l = l[:, offset:] # 55
 
     r = cv2.imread(path_r)
     r_crop = r[104:616, 320:960]
-    r = r[:, :-22]
+    r = r[:, :-offset]
     # d_l = cv2.imread(depth_l)
 
     d_l, scale_l = read_pfm(depth_l) # depth_l can't be used for imshow. check bvc.py.
     d_r, scale_r = read_pfm(depth_r)
-    d_l = d_l[:, 22:] # aligend with left image
-    d_r = d_r[:, 22:]
+    d_l = d_l[:, offset:] # aligend with left image
+    d_r = d_r[:, offset:]
     # d_l[:, :100] = 0
     print(f'scale: {scale_l}')
 
@@ -144,7 +144,7 @@ def main():
 
     ixt_l, ext_l, _ = read_cam_file(cam_l)
     ixt_r, ext_r, _ = read_cam_file(cam_r)
-    ixt_l[0][2] -= 22 # because we cropped left edge of left image
+    ixt_l[0][2] -= offset # because we cropped left edge of left image
 
     print(f'ext_r before: \n{ext_r}')
     # ext_r[0, 3] = ext_r[0, 3]
