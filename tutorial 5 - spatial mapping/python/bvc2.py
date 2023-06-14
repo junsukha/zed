@@ -71,7 +71,7 @@ def main():
 
         zed_sensors = sl.SensorsData()
         runtime_parameters = sl.RuntimeParameters()
-        runtime_parameters.sensing_mode = sl.SENSING_MODE.FILL
+        runtime_parameters.sensing_mode = sl.SENSING_MODE.STANDARD
 
         # images will be saved here
         image_l = sl.Mat(zed.get_camera_information().camera_resolution.width,
@@ -83,7 +83,7 @@ def main():
 
         scene_info = {'ixts': [], 'exts': [], 'dpt_paths': [], 'img_paths': []}
 
-        while i < 10:
+        while i < 1:
             if zed.grab(runtime_parameters) == sl.ERROR_CODE.SUCCESS:
                 # Get the pose of the left eye of the camera with reference to the world frame
                 zed.get_position(zed_pose,
@@ -102,12 +102,12 @@ def main():
                 zed.retrieve_measure(depth_l, sl.MEASURE.DEPTH)
 
                 # save image in current directory
-                cv2.imwrite('new_images/rect_{:03d}_3_r5000.png'.format(i + 1), image_zed_l)
-                cv2.imwrite('new_images/rect_{:03d}_3_r5000.png'.format(i + 2), image_zed_r)
+                cv2.imwrite('not_fill_mode_images/rect_{:03d}_3_r5000.png'.format(i + 1), image_zed_l)
+                cv2.imwrite('not_fill_mode_images/rect_{:03d}_3_r5000.png'.format(i + 2), image_zed_r)
 
                 # print(f'depth_ls.shape: {depth_l.get_data().shape}')
-                cv2.imwrite('new_images/depth_map_{:04d}.pfm'.format(i), depth_l.get_data())
-                cv2.imwrite('new_images/depth_map_{:04d}.pfm'.format(i + 1), depth_l.get_data())
+                cv2.imwrite('not_fill_mode_images/depth_map_{:04d}.pfm'.format(i), depth_l.get_data())
+                cv2.imwrite('not_fill_mode_images/depth_map_{:04d}.pfm'.format(i + 1), depth_l.get_data())
 
                 # Display the translation and timestamp
                 py_translation = sl.Translation()
@@ -167,12 +167,13 @@ def main():
                 ''' new one '''
                 R = zed_pose.get_rotation_matrix(sl.Rotation()).r
                 t = zed_pose.get_translation(sl.Translation()).get()
-                # world2cam_left = np.hstack((R.T, np.dot(-R.T, t).reshape(3, -1)))  # -t bc t they give me is not really
-                cam2world_left = np.hstack((R, t.reshape(3,-1)))
+                world2cam_left = np.hstack((R.T, np.dot(-R.T, t).reshape(3, -1)))  # -t bc t they give me is not really
+                world2cam_left = np.vstack((world2cam_left, np.array([0,0,0,1])))
+                # cam2world_left = np.hstack((R, t.reshape(3,-1)))
 
                 # translation of ext matrix. also np.dot(-R.T, -t) is for inversing ext mat.
-                cam2world_left = np.vstack((cam2world_left, np.array([0, 0, 0, 1])))
-                print(f'new: {cam2world_left}')
+                # cam2world_left = np.vstack((cam2world_left, np.array([0, 0, 0, 1])))
+                # print(f'new: {cam2world_left}')
 
                 ''' trial '''
                 # cam2world_left = np.copy(world2cam_left)
@@ -205,10 +206,10 @@ def main():
                 '''
 
                 ''' add left image extrinsic '''
-                # scene_info['exts'].append(world2cam_left)
-                scene_info['exts'].append(cam2world_left)
+                scene_info['exts'].append(world2cam_left)
+                # scene_info['exts'].append(cam2world_left)
 
-                print(f'cam2world_left: {cam2world_left}')
+                # print(f'cam2world_left: {cam2world_left}')
 
                 ''' Get the distance between the right eye and the left eye '''
                 translation_left_to_right_x = zed.get_camera_information().calibration_parameters.T[0]  # just x coord?
@@ -227,32 +228,33 @@ def main():
                 # world2cam_right[:, 3] = np.append(world2cam_left[:3,:3] @ world2cam_left[:3, 3] - translation_left_to_right, [0])
                 # print(f'\n world2cam_right: {world2cam_right.view()}')
 
-                # cam2world_left = np.copy(world2cam_left)
-                # cam2world_left[:3, :3] = world2cam_left[:3, :3].T
-                # cam2world_left[:3, 3] = -world2cam_left[:3, :3].T @ world2cam_left[:3, 3]
+                cam2world_left = np.identity(4)
+                cam2world_left[:3, :3] = world2cam_left[:3, :3].T
+                cam2world_left[:3, 3] = -world2cam_left[:3, :3].T @ world2cam_left[:3, 3]
 
-                hom = (cam2world_left @ np.append(translation_left_to_right, [1]))
+                right_cam_pos_world = (cam2world_left @ np.append(translation_left_to_right, [1]))
 
-                hom = hom[:3]  # 이전 hom 이 이론상으로는 right cam pos 인데, 여기서도 rotation이 적용된값이면 그거 원상복귀
-                print(f'hom: {hom}')
+                right_cam_pos_world = right_cam_pos_world[:3]  # 이전 hom 이 이론상으로는 right cam pos 인데, 여기서도 rotation이 적용된값이면 그거 원상복귀
+                print(f'right_cam_pos_world: {right_cam_pos_world}')
 
-                right_cam_pos_world_space = hom[:3]  # this is right camera position in world space
-                print(right_cam_pos_world_space)
+                # right_cam_pos_world_space = hom[:3]  # this is right camera position in world space
+                # print(right_cam_pos_world_space)
 
                 # world2cam_right[:3, 3] = - world2cam_right[:3, :3]@right_cam_pos_world_space
-                # world2cam_right = np.hstack((R.T, np.dot(-R.T, right_cam_pos_world_space).reshape(3, -1)))
-                # world2cam_right = np.vstack((world2cam_right, np.array([0, 0, 0, 1])))
-                cam2world_right = np.hstack((R, right_cam_pos_world_space.reshape(3, -1)))
-                cam2world_right = np.vstack((cam2world_right, np.array([0, 0, 0, 1])))
+                world2cam_right = np.hstack((R.T, -right_cam_pos_world.reshape(3,-1))) # 이건가?
+                # world2cam_right = np.hstack((R.T, np.dot(-R.T, right_cam_pos_world).reshape(3, -1)))
+                world2cam_right = np.vstack((world2cam_right, np.array([0, 0, 0, 1])))
+                # cam2world_right = np.hstack((R, right_cam_pos_world_space.reshape(3, -1)))
+                # cam2world_right = np.vstack((cam2world_right, np.array([0, 0, 0, 1])))
 
                 # world2cam_right[0,3] += right_cam_pos_world_space[0]
-                scene_info['exts'].append(cam2world_right)
+                scene_info['exts'].append(world2cam_right)
 
                 # left camera space 에서 +x 로 6.30이니까.   left camera space 에서 left camera pose 에다 6.40 을 한값을 다시 world space로
                 # 옮긴다음에 다시 right camera space 로.
 
                 # world2cam_right = world2cam_left
-                print(f'world2cam_right: {cam2world_right}')
+                print(f'world2cam_right: {world2cam_right}')
 
                 # get intrinsic
                 left_cam_info = zed.get_camera_information().calibration_parameters.left_cam
@@ -440,7 +442,7 @@ def main():
 
 def write_to_file(scene_info):
     for i in range(len(scene_info['ixts'])):
-        f = open('./new_cam/{:08d}_cam.txt'.format(i), 'w+')
+        f = open('./not_fill_mode_cam/{:08d}_cam.txt'.format(i), 'w+')
 
         # write extrinsic
         f.write("extrinsic\n")

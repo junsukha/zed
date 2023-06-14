@@ -67,23 +67,23 @@ def main():
     #           r'\tutorial 5 - spatial mapping\python\images2\depth_map_{:04d}.pfm'.format(r_dpt_num)
 
     path_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-             r'\tutorial 5 - spatial mapping\python\closeimages\rect_{:03d}_3_r5000.png'.format(l_img_num)
+             r'\tutorial 5 - spatial mapping\python\test_images\rect_{:03d}_3_r5000.png'.format(l_img_num)
     path_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-             r'\tutorial 5 - spatial mapping\python\closeimages\rect_{:03d}_3_r5000.png'.format(r_img_num)
+             r'\tutorial 5 - spatial mapping\python\test_images\rect_{:03d}_3_r5000.png'.format(r_img_num)
 
     depth_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-              r'\tutorial 5 - spatial mapping\python\new_images\depth_map_{:04d}.pfm'.format(l_dpt_num)
+              r'\tutorial 5 - spatial mapping\python\test_images\depth_map_{:04d}.pfm'.format(l_dpt_num)
 
     depth_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-              r'\tutorial 5 - spatial mapping\python\closeimages\depth_map_{:04d}.pfm'.format(r_dpt_num)
+              r'\tutorial 5 - spatial mapping\python\test_images\depth_map_{:04d}.pfm'.format(r_dpt_num)
 
 
     cam_l = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-            r'\tutorial 5 - spatial mapping\python\new_cam\{:08d}_cam.txt'.format(l_cam_num)
+            r'\tutorial 5 - spatial mapping\python\test_cam\{:08d}_cam.txt'.format(l_cam_num)
     cam_r = r'C:\Users\junsu\Documents\Brown\2023Spring\BVC\zed-examples-master\zed-examples-master\tutorials' \
-            r'\tutorial 5 - spatial mapping\python\new_cam\{:08d}_cam.txt'.format(r_cam_num)
+            r'\tutorial 5 - spatial mapping\python\test_cam\{:08d}_cam.txt'.format(r_cam_num)
 
-    offset = 18
+    offset = 22
     l = cv2.imread(path_l)
     l_crop = l[104:616, 320:960]   # 104:616, 320:960
     l = l[:, offset:] # 55
@@ -99,7 +99,7 @@ def main():
     d_r = d_r[:, offset:]
     # d_l[:, :100] = 0
     print(f'scale: {scale_l}')
-
+    print(f'depth same?: {(d_l==d_r).all()}')
     print(f'l.shape: {l.shape}')
     print(f'd.shape: {d_l.shape}')
     print(f'r.shape: {r.shape}')
@@ -137,7 +137,9 @@ def main():
 
     print(f' d_l[:5, :5]: {d_l[:5, :5]}')
     print(f' d_l max: {np.max(d_l)}')
+    print(f' d_l min: {np.min(d_l)}')
     print(f' d_r[:5, :5]: {d_r[:5, :5]}')
+    exit(0)
 
     print(f'l.shape: {l.shape}') #  (720, 1280, 3)
     print(f'd.shape: {d_l.shape}')
@@ -239,6 +241,7 @@ def main():
     # maybe my depth wrong?
     i2c_l *= d_l
     i2c_r *= d_r
+    print(f'i2c_l==i2c_r?: {(i2c_l == i2c_r).all()}')
 
     print(f'test compare: [{test_x}, {test_y}, {test_z}]')
     print(i2c_l[0])
@@ -265,6 +268,7 @@ def main():
     cam2world_r[:3, :3] = (ext_r[:3, :3]).T
     cam2world_r[:3, 3] = -ext_r[:3, :3].T @ ext_r[:3, 3]
 
+    print(f'cam2world_l==cam2world_r?: {(cam2world_l==cam2world_r).all()}')
     # doing here what I did in bvc.py
     # ext_r[0, 3] += 12.3003
     # ext_r[:3, :3] = ext_r[:3, :3].T
@@ -293,6 +297,7 @@ def main():
     # convert world space to left camera space
     c2w_r = np.sum(i2c_r[..., None, :] * cam2world_r[None, ...], axis=-1)
 
+    print(f'c2w_l==c2w_r?: {(c2w_l==c2w_r).all()}')
     # point cloud to right imge
     cam_coord = c2w_l @ ext_r.T # ext_r is world to camera
                               # c2w_l.shape = (# of points, 4)
